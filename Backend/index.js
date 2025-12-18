@@ -1,9 +1,9 @@
-const express = require('express');
-const { createCanvas, loadImage } = require('@napi-rs/canvas');
-const multer = require('multer');
-const { v4: uuidv4 } = require('uuid');
-const PDFDocument = require('pdfkit');
-const axios = require('axios');
+import express from 'express';
+import { createCanvas, loadImage } from '@napi-rs/canvas';
+import multer from 'multer';
+import { v4 as uuidv4 } from 'uuid';
+import PDFDocument from 'pdfkit';
+import axios from 'axios';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
