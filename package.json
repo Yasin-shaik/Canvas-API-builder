@@ -1,0 +1,10 @@
+{
+  "name": "canvas-builder-monorepo",
+  "private": true,
+  "scripts": {
+    "install-client": "cd Frontend && npm install",
+    "install-api": "cd Backend && npm install",
+    "build-client": "cd Frontend && npm run build",
+    "vercel-build": "npm run install-client && npm run install-api && npm run build-client"
+  }
+}
