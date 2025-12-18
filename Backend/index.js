@@ -1,14 +1,14 @@
 import express from 'express';
 import { createCanvas, loadImage } from '@napi-rs/canvas';
 import multer from 'multer';
-import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import PDFDocument from 'pdfkit';
 import axios from 'axios';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
 app.use(express.json());
 
@@ -28,7 +28,7 @@ app.post('/api/initialize', (req, res) => {
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, width, height);
-        const id = uuidv4();
+        const id = crypto.randomUUID();
         canvasStore[id] = { 
             canvas, 
             ctx, 
