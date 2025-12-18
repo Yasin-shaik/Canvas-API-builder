@@ -2,30 +2,31 @@ import React, { useState, useRef } from 'react';
 import axios from 'axios';
 
 function App() {
-  // --- REFS & STATE (Logic remains the same) ---
   const canvasRef = useRef(null);
+
   const [sessionId, setSessionId] = useState(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-  const [activeTool, setActiveTool] = useState('rectangle');
   
-  // Inputs
+  const [activeTool, setActiveTool] = useState('rectangle'); 
+  const [loading, setLoading] = useState(false);
+  
   const [initWidth, setInitWidth] = useState(800);
   const [initHeight, setInitHeight] = useState(600);
+
   const [x, setX] = useState(50);
   const [y, setY] = useState(50);
-  const [width, setWidth] = useState(100);
-  const [height, setHeight] = useState(100);
+  const [width, setWidth] = useState(200);
+  const [height, setHeight] = useState(150);
   const [radius, setRadius] = useState(50);
-  const [color, setColor] = useState('#000000');
-  const [text, setText] = useState('Hello World');
-  const [fontSize, setFontSize] = useState(20);
+  const [color, setColor] = useState('#EC4186');
+  const [text, setText] = useState('Neon Vibes');
+  const [fontSize, setFontSize] = useState(24);
   const [imageFile, setImageFile] = useState(null);
 
-  // --- HELPERS ---
   const getContext = () => canvasRef.current.getContext('2d');
 
-  // --- API HANDLERS ---
   const handleInitialize = async () => {
+    setLoading(true);
     try {
       const res = await axios.post('/api/initialize', { width: initWidth, height: initHeight });
       setSessionId(res.data.id);
@@ -34,7 +35,10 @@ function App() {
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, initWidth, initHeight);
     } catch (err) {
+      console.error(err);
       alert('Failed to initialize canvas');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,21 +73,20 @@ function App() {
   };
 
   const handleDrawImage = async () => {
-    if (!imageFile) return alert('Select an image');
+    if (!imageFile) return alert('Please select an image first');
     const formData = new FormData();
     formData.append('id', sessionId);
     formData.append('x', x);
     formData.append('y', y);
-    formData.append('width', width);
-    formData.append('height', height);
+    if(width) formData.append('width', width); 
+    if(height) formData.append('height', height);
     formData.append('imageFile', imageFile);
-
     try {
-      await axios.post('/api/draw/image', formData, { headers: { 'Content-Type': 'multipart/form-data' }});
+      await axios.post('/api/draw/image', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       const reader = new FileReader();
       reader.onload = (e) => {
         const img = new Image();
-        img.onload = () => getContext().drawImage(img, x, y, width, height);
+        img.onload = () => { getContext().drawImage(img, x, y, width || img.width, height || img.height); };
         img.src = e.target.result;
       };
       reader.readAsDataURL(imageFile);
@@ -91,153 +94,297 @@ function App() {
   };
 
   const handleExport = () => {
-    if (sessionId) window.location.href = `/api/export/${sessionId}`;
+    if (!sessionId) return;
+    window.location.href = `/api/export/${sessionId}`;
   };
 
-  // --- UI RENDER ---
   return (
-    <div className="flex h-screen bg-gray-100 font-sans text-gray-800">
-      
-      {/* SIDEBAR */}
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col shadow-xl z-10 overflow-y-auto">
-        <div className="p-6 border-b border-gray-100">
-          <h1 className="text-2xl font-extrabold text-blue-600 tracking-tight">Canvas Builder</h1>
-          <p className="text-xs text-gray-400 mt-1">v1.0.0 API Integration</p>
+    <div style={styles.container}>
+      <div style={styles.sidebar}>
+        <div style={styles.header}>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#FFFFFF', letterSpacing: '1px' }}>NEON CANVAS</h2>
+          <span style={{ fontSize: '0.8rem', opacity: 0.8, color: '#EC4186' }}>v1.0 API</span>
         </div>
-
-        <div className="flex-1 p-6 space-y-8">
-          
-          {/* 1. SETUP SECTION */}
-          {!sessionId && (
-            <div className="space-y-4">
-              <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold">1. Setup Canvas</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Width</label>
-                  <input type="number" value={initWidth} onChange={e => setInitWidth(Number(e.target.value))} 
-                    className="w-full p-2 bg-gray-50 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Height</label>
-                  <input type="number" value={initHeight} onChange={e => setInitHeight(Number(e.target.value))} 
-                    className="w-full p-2 bg-gray-50 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition" />
-                </div>
+        {!sessionId && (
+          <div style={styles.section}>
+            <h3 style={styles.sectionTitle}>1. Project Setup</h3>
+            <div style={styles.inputGroup}>
+              <div style={styles.halfInput}>
+                <label style={styles.label}>Width</label>
+                <input type="number" value={initWidth} onChange={e => setInitWidth(Number(e.target.value))} style={styles.input} />
               </div>
-              <button onClick={handleInitialize} className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-all active:scale-95">
-                Initialize Canvas
-              </button>
+              <div style={styles.halfInput}>
+                <label style={styles.label}>Height</label>
+                <input type="number" value={initHeight} onChange={e => setInitHeight(Number(e.target.value))} style={styles.input} />
+              </div>
             </div>
-          )}
-
-          {/* 2. TOOLS SECTION */}
-          {sessionId && (
-            <>
-              <div className="space-y-3">
-                <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold">2. Select Tool</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {['rectangle', 'circle', 'text', 'image'].map(tool => (
-                    <button 
-                      key={tool} 
-                      onClick={() => setActiveTool(tool)}
-                      className={`py-2 px-3 text-sm font-medium rounded-md transition-all capitalize
-                        ${activeTool === tool 
-                          ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-500 shadow-sm' 
-                          : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
-                    >
-                      {tool}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 3. PROPERTIES SECTION */}
-              <div className="space-y-4 bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <h3 className="text-sm uppercase tracking-wider text-gray-500 font-semibold mb-2">3. Configure</h3>
-                
-                {/* GLOBAL POS & COLOR */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                     <label className="block text-xs text-gray-500 mb-1">X Pos</label>
-                     <input type="number" value={x} onChange={e => setX(Number(e.target.value))} className="w-full p-1.5 text-sm border rounded" />
-                  </div>
-                  <div>
-                     <label className="block text-xs text-gray-500 mb-1">Y Pos</label>
-                     <input type="number" value={y} onChange={e => setY(Number(e.target.value))} className="w-full p-1.5 text-sm border rounded" />
-                  </div>
-                </div>
-                <div>
-                    <label className="block text-xs text-gray-500 mb-1">Color</label>
-                    <div className="flex items-center gap-2">
-                      <input type="color" value={color} onChange={e => setColor(e.target.value)} className="h-8 w-8 rounded cursor-pointer border-0" />
-                      <span className="text-xs text-gray-500 font-mono">{color}</span>
-                    </div>
-                </div>
-
-                {/* DYNAMIC INPUTS */}
-                {activeTool === 'rectangle' && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <input type="number" placeholder="W" value={width} onChange={e => setWidth(Number(e.target.value))} className="p-2 text-sm border rounded" />
-                    <input type="number" placeholder="H" value={height} onChange={e => setHeight(Number(e.target.value))} className="p-2 text-sm border rounded" />
-                  </div>
-                )}
-                
-                {activeTool === 'circle' && (
-                   <input type="number" placeholder="Radius" value={radius} onChange={e => setRadius(Number(e.target.value))} className="w-full p-2 text-sm border rounded" />
-                )}
-
-                {activeTool === 'text' && (
-                  <div className="space-y-2">
-                    <input type="text" value={text} onChange={e => setText(e.target.value)} className="w-full p-2 text-sm border rounded" placeholder="Type text..." />
-                    <input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} className="w-full p-2 text-sm border rounded" placeholder="Font Size" />
-                  </div>
-                )}
-
-                {activeTool === 'image' && (
-                   <div className="space-y-2">
-                     <input type="file" onChange={e => setImageFile(e.target.files[0])} className="w-full text-xs text-gray-500 file:mr-2 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-                     <div className="grid grid-cols-2 gap-3">
-                        <input type="number" placeholder="W" value={width} onChange={e => setWidth(Number(e.target.value))} className="p-2 text-sm border rounded" />
-                        <input type="number" placeholder="H" value={height} onChange={e => setHeight(Number(e.target.value))} className="p-2 text-sm border rounded" />
-                     </div>
-                   </div>
-                )}
-
-                {/* ACTION BUTTON */}
-                <button 
-                  onClick={activeTool === 'rectangle' ? handleDrawRect : activeTool === 'circle' ? handleDrawCircle : activeTool === 'text' ? handleDrawText : handleDrawImage}
-                  className="w-full py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded shadow-sm transition active:scale-95 mt-2"
-                >
-                  {activeTool === 'image' ? 'Upload & Draw' : `Add ${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)}`}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* FOOTER: EXPORT */}
-        {sessionId && (
-          <div className="p-6 border-t border-gray-200 bg-gray-50">
-            <button onClick={handleExport} className="w-full flex items-center justify-center gap-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-all hover:shadow-lg active:scale-95">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-              Export PDF
+            <button onClick={handleInitialize} style={styles.primaryButton} disabled={loading}>
+              {loading ? 'INITIALIZING...' : 'CREATE CANVAS'}
             </button>
           </div>
         )}
+        {sessionId && (
+          <>
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>2. Select Tool</h3>
+              <div style={styles.toolGrid}>
+                {['rectangle', 'circle', 'text', 'image'].map(tool => (
+                  <button 
+                    key={tool} 
+                    onClick={() => setActiveTool(tool)}
+                    style={{
+                      ...styles.toolButton,
+                      background: activeTool === tool ? '#EC4186' : 'transparent',
+                      color: activeTool === tool ? '#FFFFFF' : '#EC4186',
+                      borderColor: '#EC4186'
+                    }}
+                  >
+                    {tool.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>3. Configure {activeTool}</h3>
+              <div style={styles.inputGroup}>
+                <div style={styles.halfInput}>
+                  <label style={styles.label}>X Position</label>
+                  <input type="number" value={x} onChange={e => setX(Number(e.target.value))} style={styles.input} />
+                </div>
+                <div style={styles.halfInput}>
+                  <label style={styles.label}>Y Position</label>
+                  <input type="number" value={y} onChange={e => setY(Number(e.target.value))} style={styles.input} />
+                </div>
+              </div>
+              <div style={{ marginBottom: '15px' }}>
+                 <label style={styles.label}>Color Picker</label>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input type="color" value={color} onChange={e => setColor(e.target.value)} style={styles.colorPicker} />
+                    <span style={{ color: '#fff', fontSize: '0.9rem', fontFamily: 'monospace' }}>{color}</span>
+                 </div>
+              </div>
+              {activeTool === 'rectangle' && (
+                <div style={styles.inputGroup}>
+                  <div style={styles.halfInput}>
+                    <label style={styles.label}>Width</label>
+                    <input type="number" value={width} onChange={e => setWidth(Number(e.target.value))} style={styles.input} />
+                  </div>
+                  <div style={styles.halfInput}>
+                    <label style={styles.label}>Height</label>
+                    <input type="number" value={height} onChange={e => setHeight(Number(e.target.value))} style={styles.input} />
+                  </div>
+                  <button onClick={handleDrawRect} style={styles.actionButton}>ADD RECTANGLE</button>
+                </div>
+              )}
+              {activeTool === 'circle' && (
+                <div style={styles.inputGroup}>
+                  <div style={styles.halfInput}>
+                    <label style={styles.label}>Radius</label>
+                    <input type="number" value={radius} onChange={e => setRadius(Number(e.target.value))} style={styles.input} />
+                  </div>
+                  <button onClick={handleDrawCircle} style={styles.actionButton}>ADD CIRCLE</button>
+                </div>
+              )}
+              {activeTool === 'text' && (
+                <div style={styles.inputGroup}>
+                   <div style={{width: '100%', marginBottom: '10px'}}>
+                     <label style={styles.label}>Content</label>
+                     <input type="text" value={text} onChange={e => setText(e.target.value)} style={styles.input} />
+                   </div>
+                   <div style={styles.halfInput}>
+                     <label style={styles.label}>Font Size</label>
+                     <input type="number" value={fontSize} onChange={e => setFontSize(Number(e.target.value))} style={styles.input} />
+                   </div>
+                   <button onClick={handleDrawText} style={styles.actionButton}>ADD TEXT</button>
+                </div>
+              )}
+              {activeTool === 'image' && (
+                <div style={styles.inputGroup}>
+                  <div style={{width: '100%', marginBottom: '10px'}}>
+                    <label style={styles.label}>Upload File</label>
+                    <input type="file" onChange={e => setImageFile(e.target.files[0])} style={{...styles.input, padding: '5px'}} />
+                  </div>
+                  <div style={styles.halfInput}>
+                    <label style={styles.label}>Width (Opt)</label>
+                    <input type="number" value={width} onChange={e => setWidth(Number(e.target.value))} style={styles.input} />
+                  </div>
+                  <button onClick={handleDrawImage} style={styles.actionButton}>UPLOAD & DRAW</button>
+                </div>
+              )}
+            </div>
+            <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+              <button onClick={handleExport} style={styles.exportButton}>
+                DOWNLOAD PDF
+              </button>
+            </div>
+          </>
+        )}
       </div>
-
-      {/* MAIN PREVIEW AREA */}
-      <div className="flex-1 bg-gray-200 overflow-auto flex items-center justify-center p-10 relative">
-        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(#999 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
-        
-        {/* CANVAS */}
-        <div className="relative z-10 shadow-2xl rounded-sm overflow-hidden bg-white border border-gray-300">
-           {!sessionId && <div className="p-10 text-gray-400 font-medium">Initialize canvas to start...</div>}
-           <canvas ref={canvasRef} width={dimensions.width} height={dimensions.height} className={!sessionId ? 'hidden' : 'block'} />
+      <div style={styles.mainArea}>
+        <div style={styles.canvasWrapper}>
+           {!sessionId && <div style={{color: '#38124A', fontWeight: 'bold'}}>No Canvas Initialized</div>}
+           <canvas 
+             ref={canvasRef}
+             width={dimensions.width}
+             height={dimensions.height}
+             style={{ 
+               ...styles.canvas,
+               display: sessionId ? 'block' : 'none'
+             }}
+           />
         </div>
       </div>
-
     </div>
   );
 }
+
+const styles = {
+  container: {
+    display: 'flex',
+    height: '100vh',
+    width: '100vw',
+    fontFamily: '"Inter", "Segoe UI", Roboto, sans-serif',
+    overflow: 'hidden',
+    backgroundColor: '#f0f0f0'
+  },
+  sidebar: {
+    width: '340px',
+    backgroundColor: '#38124A',
+    color: '#FFFFFF',        
+    display: 'flex',
+    flexDirection: 'column',
+    padding: '25px',
+    boxShadow: '4px 0 15px rgba(56, 18, 74, 0.4)',
+    zIndex: 10,
+    overflowY: 'auto'
+  },
+  header: {
+    borderBottom: '2px solid #EC4186',
+    paddingBottom: '20px',
+    marginBottom: '25px'
+  },
+  section: {
+    marginBottom: '30px',
+  },
+  sectionTitle: {
+    fontSize: '0.8rem',
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+    color: '#EE544A',
+    marginBottom: '15px',
+    marginTop: 0,
+    fontWeight: 'bold'
+  },
+  inputGroup: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '12px',
+    marginBottom: '12px'
+  },
+  halfInput: {
+    flex: 1,
+    minWidth: '100px'
+  },
+  label: {
+    display: 'block',
+    fontSize: '0.75rem',
+    marginBottom: '6px',
+    color: '#E0E0E0',
+    fontWeight: '500'
+  },
+  input: {
+    width: '100%',
+    padding: '10px 12px',
+    borderRadius: '4px',
+    border: '1px solid #5a2d7a',
+    backgroundColor: '#2a0d38',
+    color: '#FFFFFF',
+    fontSize: '0.9rem',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  colorPicker: {
+    border: '2px solid #fff',
+    width: '40px',
+    height: '40px',
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+    borderRadius: '4px'
+  },
+  primaryButton: {
+    width: '100%',
+    padding: '14px',
+    backgroundColor: '#EC4186',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    marginTop: '10px',
+    letterSpacing: '1px',
+    boxShadow: '0 4px 10px rgba(236, 65, 134, 0.3)',
+    transition: 'transform 0.1s'
+  },
+  actionButton: {
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#EE544A',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    marginTop: '15px',
+    textTransform: 'uppercase',
+    fontSize: '0.85rem'
+  },
+  exportButton: {
+    width: '100%',
+    padding: '16px',
+    backgroundColor: 'transparent', 
+    color: '#EC4186',
+    border: '2px solid #EC4186',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontSize: '1rem',
+    fontWeight: '900',
+    letterSpacing: '2px',
+    textTransform: 'uppercase',
+    transition: 'all 0.3s'
+  },
+  toolGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '12px'
+  },
+  toolButton: {
+    padding: '12px',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontWeight: 'bold',
+    transition: 'all 0.2s',
+    textAlign: 'center',
+    border: '2px solid transparent',
+    fontSize: '0.8rem'
+  },
+  mainArea: {
+    flex: 1,
+    backgroundColor: '#E5E5E5',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: '40px',
+    overflow: 'auto'
+  },
+  canvasWrapper: {
+    boxShadow: '0 20px 50px rgba(0,0,0,0.2)',
+    border: '2px solid #38124A',
+    backgroundColor: '#fff'
+  },
+  canvas: {
+    display: 'block',
+    backgroundColor: '#ffffff'
+  }
+};
 
 export default App;
