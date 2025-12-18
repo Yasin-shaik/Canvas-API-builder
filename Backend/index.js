@@ -180,7 +180,11 @@ app.get('/api/export/:id', async (req, res) => {
     try {
         const doc = new PDFDocument({ 
             size: [width, height], 
-            compress: true 
+            compress: true,
+            info: {
+                Title: `Canvas Export ${id}`,
+                Author: 'Canvas Builder API',
+            } 
         });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="canvas-${id}.pdf"`);
@@ -214,7 +218,8 @@ app.get('/api/export/:id', async (req, res) => {
                         }
                         doc.image(imgBuffer, cmd.params.x, cmd.params.y, {
                             width: cmd.params.width,
-                            height: cmd.params.height
+                            height: cmd.params.height,
+                            // quality: 80
                         });
                     } catch (err) {
                         console.error('Failed to add image to PDF:', err.message);
