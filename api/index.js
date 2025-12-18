@@ -1,3 +1,2 @@
-import app from "../Backend/index.js";
-
+const app=require('../Backend/index.js')
 module.exports = app;
