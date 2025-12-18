@@ -1,5 +1,5 @@
 const express = require('express');
-const { createCanvas, loadImage } = require('canvas'); 
+const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const PDFDocument = require('pdfkit');

@@ -11,9 +11,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@napi-rs/canvas": "^0.1.84",
     "axios": "^1.13.2",
     "body-parser": "^2.2.1",
-    "canvas": "^3.2.0",
     "cors": "^2.8.5",
     "express": "^5.2.1",
     "multer": "^2.0.2",
