@@ -206,7 +206,7 @@ app.get('/api/debug/:id', (req, res) => {
 });
 
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
+  res.sendFile(path.join(__dirname, '../client/index.html'));
 });
 
 app.listen(PORT, () => {
