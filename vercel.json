@@ -6,7 +6,7 @@
     },
     {
       "source": "/(.*)",
-      "destination": "/Frontend/index.html"
+      "destination": "/client/index.html"
     }
   ]
 }
