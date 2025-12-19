@@ -205,8 +205,8 @@ app.get('/api/debug/:id', (req, res) => {
     res.json(canvasStore[id].drawHistory);
 });
 
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
 });
 
 app.listen(PORT, () => {
