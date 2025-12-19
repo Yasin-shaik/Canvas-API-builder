@@ -4,19 +4,18 @@ const multer = require('multer');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
 const axios = require('axios');
+const path = require('path'); 
 
 const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-const canvasStore = {};
+app.use(express.static(path.join(__dirname, '../Frontend/dist')));
 
-app.get('/', (req, res) => {
-  res.send('Canvas Builder API is running!');
-});
+const canvasStore = {};
 
 app.post('/api/initialize', (req, res) => {
     const { width, height } = req.body;
@@ -54,9 +53,6 @@ app.post('/api/draw/rectangle', (req, res) => {
     if (!id || !canvasStore[id]) {
         return res.status(404).json({ error: 'Canvas session not found. Please initialize first.' });
     }
-    if (x === undefined || y === undefined || !width || !height) {
-        return res.status(400).json({ error: 'Missing parameters: x, y, width, height are required.' });
-    }
     const { ctx, drawHistory } = canvasStore[id];
     ctx.fillStyle = color || '#000000';
     ctx.fillRect(x, y, width, height);
@@ -72,9 +68,6 @@ app.post('/api/draw/circle', (req, res) => {
     if (!id || !canvasStore[id]) {
         return res.status(404).json({ error: 'Canvas session not found.' });
     }
-    if (x === undefined || y === undefined || !radius) {
-        return res.status(400).json({ error: 'Missing parameters: x, y, radius are required.' });
-    }
     const { ctx, drawHistory } = canvasStore[id];
     ctx.beginPath();
     ctx.arc(x, y, radius, 0, Math.PI * 2, false);
@@ -88,22 +81,10 @@ app.post('/api/draw/circle', (req, res) => {
     res.json({ message: 'Circle drawn successfully' });
 });
 
-app.get('/api/view/:id', (req, res) => {
-    const { id } = req.params;
-    if (!canvasStore[id]) return res.status(404).send('Canvas not found');
-
-    const { canvas } = canvasStore[id];
-    res.setHeader('Content-Type', 'image/png');
-    canvas.createPNGStream().pipe(res);
-});
-
 app.post('/api/draw/text', (req, res) => {
     const { id, text, x, y, fontSize, color, fontFamily } = req.body;
     if (!id || !canvasStore[id]) {
         return res.status(404).json({ error: 'Canvas session not found.' });
-    }
-    if (!text || x === undefined || y === undefined) {
-        return res.status(400).json({ error: 'Missing parameters: text, x, and y are required.' });
     }
     const { ctx, drawHistory } = canvasStore[id];
     const size = fontSize || 20;
@@ -118,22 +99,12 @@ app.post('/api/draw/text', (req, res) => {
     res.json({ message: 'Text added successfully' });
 });
 
-app.get('/api/debug/:id', (req, res) => {
-    const { id } = req.params;
-    if (!canvasStore[id]) return res.status(404).json({ error: 'Session not found' });
-    res.json(canvasStore[id].drawHistory);
-});
-
 app.post('/api/draw/image', upload.single('imageFile'), async (req, res) => {
     const { id, imageUrl, x, y, width, height } = req.body;
     const file = req.file;
 
     if (!id || !canvasStore[id]) {
         return res.status(404).json({ error: 'Canvas session not found.' });
-    }
-
-    if (x === undefined || y === undefined) {
-        return res.status(400).json({ error: 'x and y coordinates are required.' });
     }
 
     try {
@@ -181,10 +152,7 @@ app.get('/api/export/:id', async (req, res) => {
         const doc = new PDFDocument({ 
             size: [width, height], 
             compress: true,
-            info: {
-                Title: `Canvas Export ${id}`,
-                Author: 'Canvas Builder API',
-            } 
+            info: { Title: `Canvas Export ${id}`, Author: 'Canvas Builder API' } 
         });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename="canvas-${id}.pdf"`);
@@ -218,12 +186,9 @@ app.get('/api/export/:id', async (req, res) => {
                         }
                         doc.image(imgBuffer, cmd.params.x, cmd.params.y, {
                             width: cmd.params.width,
-                            height: cmd.params.height,
-                            // quality: 80
+                            height: cmd.params.height
                         });
-                    } catch (err) {
-                        console.error('Failed to add image to PDF:', err.message);
-                    }
+                    } catch (err) { console.error('Failed to add image to PDF:', err.message); }
                     break;
             }
         }
@@ -234,8 +199,16 @@ app.get('/api/export/:id', async (req, res) => {
     }
 });
 
-// app.listen(PORT, () => {
-//     console.log(`Server is running on http://localhost:${PORT}`);
-// });
+app.get('/api/debug/:id', (req, res) => {
+    const { id } = req.params;
+    if (!canvasStore[id]) return res.status(404).json({ error: 'Session not found' });
+    res.json(canvasStore[id].drawHistory);
+});
 
-module.exports = app;
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../Frontend/dist/index.html'));
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
