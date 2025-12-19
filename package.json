@@ -5,6 +5,7 @@
     "install-client": "cd client && npm install",
     "install-api": "cd api && npm install",
     "build-client": "cd client && npm run build",
-    "vercel-build": "npm run install-client && npm run install-api && npm run build-client"
+    "vercel-build": "npm run install-client && npm run install-api && npm run build-client",
+    "start": "node api/index.js"
   }
 }
